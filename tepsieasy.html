@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>🍺 Tepsi Dengeleme</title>
+
+<style>
+body{
+    margin:0;
+    background:#1b1b1b;
+    color:white;
+    font-family:Arial,sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:100vh;
+}
+
+h1{
+    margin-bottom:10px;rogr
+}
+
+#progressWrap{
+    width:500px;
+    height:25px;
+    background:#333;
+    border:2px solid #666;
+    margin-bottom:15px;
+}
+
+#progress{
+    width:50%;
+    height:100%;
+    background:lime;
+}
+
+#status{
+    margin-bottom:15px;
+    font-size:20px;
+}
+
+canvas{
+    background:#222;
+    border-radius:12px;
+    touch-action:none;
+}
+</style>
+</head>
+<body>
+
+<h1>🍺 Tepsiyi Dengele</h1>
+
+<div id="progressWrap">
+    <div id="progress"></div>
+</div>
+
+<div id="status">
+Sarı noktayı yeşil bölgede tut!
+</div>
+
+<canvas id="game" width="500" height="500"></canvas>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+/* ===================== */
+/* STATE */
+/* ===================== */
+
+let holding = false;
+
+/* oyuncu */
+let playerY = 250;
+let playerVel = 0;
+
+/* hedef bölge */
+let targetY = 250;
+let targetVel = 0;
+
+let progress = 50;
+let gameOver = false;
+
+/* hedef yüksekliği */
+const targetSize = 50;
+
+/* ===================== */
+/* INPUT */
+/* ===================== */
+
+document.addEventListener("keydown",(e)=>{
+    if(e.code==="Space"){
+        e.preventDefault();
+        holding=true;
+    }
+});
+
+document.addEventListener("keyup",()=>{
+    holding=false;
+});
+
+canvas.addEventListener("touchstart",(e)=>{
+    e.preventDefault();
+    holding=true;
+});
+
+canvas.addEventListener("touchend",(e)=>{
+    e.preventDefault();
+    holding=false;
+});
+
+/* ===================== */
+/* DRAW */
+/* ===================== */
+
+function draw(){
+
+    ctx.clearRect(0,0,500,500);
+
+    /* ray */
+
+    ctx.fillStyle="#555";
+    ctx.fillRect(235,40,30,420);
+
+    /* hedef bölge */
+
+    ctx.fillStyle="lime";
+
+    ctx.fillRect(
+        220,
+        targetY-targetSize/2,
+        60,
+        targetSize
+    );
+
+    /* oyuncu */
+
+    ctx.fillStyle="gold";
+
+    ctx.beginPath();
+    ctx.arc(
+        250,
+        playerY,
+        12,
+        0,
+        Math.PI*2
+    );
+    ctx.fill();
+
+    /* üstte bardaklar */
+
+    ctx.font="30px Arial";
+    ctx.fillText("🍺 🍺 🍺",175,25);
+
+    requestAnimationFrame(draw);
+}
+
+/* ===================== */
+/* UPDATE */
+/* ===================== */
+
+function update(){
+
+    if(gameOver){
+        requestAnimationFrame(update);
+        return;
+    }
+
+    /* PLAYER */
+
+    if(holding){
+        playerVel -= 0.65;
+    }
+
+    playerVel += 0.38;
+    playerVel *= 0.92;
+
+    playerY += playerVel;
+
+    if(playerY < 50){
+        playerY = 50;
+        playerVel = 0;
+    }
+
+    if(playerY > 450){
+        playerY = 450;
+        playerVel = 0;
+    }
+
+    /* TARGET */
+
+    targetVel += (Math.random()-0.5) * 1.2;
+    targetVel *= 0.95;
+
+    targetY += targetVel;
+
+    if(targetY < 60){
+        targetY = 60;
+        targetVel += 3;
+    }
+
+    if(targetY > 440){
+        targetY = 440;
+        targetVel -= 3;
+    }
+
+    /* CHECK */
+
+    if(
+        playerY > targetY-targetSize/2 &&
+        playerY < targetY+targetSize/2
+    ){
+        progress += 0.25;
+    }
+    else{
+        progress -= 0.35;
+    }
+
+    progress = Math.max(
+        0,
+        Math.min(100,progress)
+    );
+
+    document.getElementById("progress").style.width =
+        progress + "%";
+
+    /* WIN */
+
+    if(progress >= 100){
+
+        gameOver = true;
+
+        document.getElementById("status").innerHTML =
+        "🏆 Bardakları dökmeden ulaştırdın!";
+    }
+
+    /* LOSE */
+
+    if(progress <= 0){
+
+        gameOver = true;
+
+        document.getElementById("status").innerHTML =
+        "💥 Tüm bardakları devirdin!";
+    }
+
+    requestAnimationFrame(update);
+}
+
+/* ===================== */
+/* START */
+/* ===================== */
+
+draw();
+update();
+
+</script>
+
+</body>
+</html>
