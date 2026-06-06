@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Dart Challenge 5 Shot</title>
+
+<style>
+body{
+    margin:0;
+    background:#1b1b1b;
+    color:white;
+    font-family:Arial;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+#wrap{
+    display:flex;
+    gap:30px;
+}
+
+/* GAME */
+#gameArea{
+    text-align:center;
+}
+
+h1{
+    margin-bottom:10px;
+}
+
+#status{
+    margin-bottom:10px;
+    font-size:18px;
+}
+
+canvas{
+    background:#222;
+    border-radius:12px;
+}
+
+/* BAR */
+#bar{
+    width:420px;
+    height:18px;
+    background:#333;
+    border:2px solid #777;
+    margin-top:12px;
+    position:relative;
+}
+
+#perfect{
+    position:absolute;
+    height:100%;
+    background:rgba(0,255,0,0.25);
+    left:45%;
+    width:10%;
+}
+
+#pointer{
+    position:absolute;
+    top:-4px;
+    width:10px;
+    height:26px;
+    background:white;
+    transform:translateX(-50%);
+}
+
+/* SCORE PANEL */
+#panel{
+    width:180px;
+    background:#111;
+    padding:15px;
+    border:1px solid #444;
+    border-radius:10px;
+    font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="wrap">
+
+<div id="gameArea">
+
+<h1>🎯 DART 5 SHOT</h1>
+
+<div id="status">Hazır</div>
+
+<canvas id="game" width="420" height="420"></canvas>
+
+<div id="bar">
+    <div id="perfect"></div>
+    <div id="pointer"></div>
+</div>
+
+</div>
+
+<div id="panel">
+    <div>Atış: <span id="shot">0</span>/5</div>
+    <div>Skor: <span id="score">0</span></div>
+</div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const cx = 210;
+const cy = 210;
+
+let pointer = 0;
+let dir = 1;
+
+let shooting = false;
+
+let shotCount = 0;
+let totalScore = 0;
+
+/* difficulty */
+let greenWidth = 0.10;
+
+/* arrow */
+let arrow = null;
+
+/* ================= TARGET ================= */
+
+function drawTarget(){
+
+    drawCircle(180, "#444", 10);
+    drawCircle(140, "#666", 10);
+    drawCircle(100, "#888", 10);
+    drawCircle(60, "lime", 10);
+
+    ctx.beginPath();
+    ctx.arc(cx,cy,25,0,Math.PI*2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+}
+
+function drawCircle(r,color,w){
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.lineWidth = w;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+}
+
+/* ================= ARROW ================= */
+
+function drawArrow(){
+    if(!arrow) return;
+
+    ctx.beginPath();
+    ctx.moveTo(arrow.x, arrow.y);
+    ctx.lineTo(arrow.x - 18, arrow.y - 5);
+    ctx.lineTo(arrow.x - 18, arrow.y + 5);
+    ctx.closePath();
+    ctx.fillStyle = "white";
+    ctx.fill();
+}
+
+/* ================= DRAW ================= */
+
+function draw(){
+    ctx.clearRect(0,0,420,420);
+    drawTarget();
+    drawArrow();
+    requestAnimationFrame(draw);
+}
+
+/* ================= POINTER ================= */
+
+function updatePointer(){
+
+    if(!shooting){
+
+        pointer += 0.05 * dir;
+
+        if(pointer >= 1){ pointer = 1; dir = -1; }
+        if(pointer <= 0){ pointer = 0; dir = 1; }
+
+        updateBar(); // 🔥 HER FRAME GÜNCELLE
+    }
+
+    requestAnimationFrame(updatePointer);
+}
+
+/* ================= SHOOT ================= */
+
+function shoot(){
+
+    if(shooting || shotCount >= 5) return;
+
+    shooting = true;
+
+    arrow = { x: cx, y: 380 };
+
+    const targetX = cx;
+    const targetY = cy;
+
+    function move(){
+
+        let dx = targetX - arrow.x;
+        let dy = targetY - arrow.y;
+
+        let dist = Math.sqrt(dx*dx + dy*dy);
+
+        if(dist < 10){
+            hit();
+            shooting = false;
+            return;
+        }
+
+        arrow.x += dx/dist * 9;
+        arrow.y += dy/dist * 9;
+
+        requestAnimationFrame(move);
+    }
+
+    move();
+}
+
+/* ================= HIT ================= */
+
+function hit(){
+
+    shotCount++;
+
+    let points = 0;
+
+    if(pointer >= 0.5 - greenWidth/2 &&
+       pointer <= 0.5 + greenWidth/2){
+        points = 10;
+    }
+    else if(Math.abs(pointer - 0.5) < greenWidth*1.5){
+        points = 5;
+    }
+    else if(Math.abs(pointer - 0.5) < greenWidth*2.5){
+        points = 2;
+    }
+    else{
+        points = 0;
+    }
+
+    totalScore += points;
+
+    document.getElementById("status").innerText =
+        "+" + points + " puan";
+
+    document.getElementById("shot").innerText = shotCount;
+    document.getElementById("score").innerText = totalScore;
+
+    /* difficulty increases */
+    greenWidth *= 0.55;
+
+    if(shotCount >= 5){
+        document.getElementById("status").innerText =
+            "🏆 Oyun bitti!";
+    }
+
+    pointer = 0;
+}
+
+/* ================= INPUT ================= */
+
+document.addEventListener("keydown",(e)=>{
+
+    if(e.code === "Space"){
+        e.preventDefault();
+        shoot();
+    }
+});
+
+canvas.addEventListener("mousedown", shoot);
+canvas.addEventListener("touchstart",(e)=>{
+    e.preventDefault();
+    shoot();
+});
+
+/* ================= BAR ================= */
+
+function updateBar(){
+
+    const perfect = document.getElementById("perfect");
+    const pointerEl = document.getElementById("pointer");
+
+    perfect.style.left = ((0.5 - greenWidth/2) * 100) + "%";
+    perfect.style.width = (greenWidth * 100) + "%";
+
+    pointerEl.style.left = (pointer * 100) + "%";
+}
+
+/* ================= START ================= */
+
+draw();
+updatePointer();
+drawBar();
+
+</script>
+
+</body>
+</html>
